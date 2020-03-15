@@ -184,11 +184,9 @@ def question_10(df8):
             Data Type: Dataframe
     """
 
-    #################################################
     df8['release_date_format'] = pd.to_datetime(df8.release_date)
     df10 = df8.sort_values(by='release_date_format', ascending=False)
     df10.drop('release_date_format', inplace=True, axis=1)
-    #################################################
 
     log("QUESTION 10", output_df=df10, other=df10["release_date"].head(5).to_string().replace("\n", " "))
     return df10
