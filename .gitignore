@@ -53,8 +53,7 @@ coverage.xml
 
 # Pycharm stuff:
 .idea/
-Images/IDRiD/
-data/
+
 *.aux
 *.synctex.gz
 *.out
