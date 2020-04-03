@@ -10,7 +10,7 @@ import json
 import sqlite3
 
 # with open('data.json') as f:
-#     r = json.load(f)
+#   r = json.load(f)
 
 
 app = Flask(__name__)
@@ -31,9 +31,7 @@ class DataImport(Resource):
         if not ind_id['indicator_id']:
             return {'message': 'Missing indicator_id, Please enter the id'}, 400
 
-        response_data = requests.get(
-            'http://api.worldbank.org/v2/countries/all/indicators/{0}?date=2012:2017&format=json&per_page=1000'.format(
-                ind_id))
+        response_data = requests.get('http://api.worldbank.org/v2/countries/all/indicators/{0}?date=2012:2017&format=json&per_page=1000'.format(ind_id['indicator_id']))
         json_data = response_data.json()
         # with open('data.json') as f:
         #     r = json.load(f)
@@ -50,14 +48,15 @@ class DataImport(Resource):
         dataset.drop(columns_to_drop, axis=1, inplace=True)
         dataset.dropna(inplace=True)
         dataset.reset_index(drop=True, inplace=True)
-        print(dataset.head())
 
         conn = sqlite3.connect('z5222766.db')
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
 
+        # Initializations of the responses
         id = 0
         creation_time = str()
+
         if len(cursor.fetchall()) == 0:
             id = 1
             dataset['id'] = dataset.apply(lambda x: id, axis=1)
@@ -67,19 +66,18 @@ class DataImport(Resource):
         else:
             sqlite_dataset = pd.read_sql('select * from countries', conn)
             indicator_list = list(sqlite_dataset['indicator'].unique())
-            print(indicator_list)
             if ind_id['indicator_id'] not in indicator_list:
-                print('x')
-                max_id = max(list(sqlite_dataset['id'].unique()))
-                id = max_id + 1
+                list_id = list(sqlite_dataset['id'].unique())
+                if len(list_id) == 0:
+                    id = 1
+                else:
+                    id = max(list_id) + 1
                 dataset['id'] = dataset.apply(lambda x: id, axis=1)
                 creation_time = datetime.now()
                 dataset['creation_time'] = dataset.apply(lambda x: creation_time, axis=1)
                 dataset.to_sql('countries', conn, if_exists='append', index=False)
             else:
-                print('xxc')
                 indicator_match_subset = sqlite_dataset.loc[sqlite_dataset['indicator'] == ind_id['indicator_id']]
-                print(indicator_match_subset)
                 data_extractor = indicator_match_subset.iloc[0]
                 id = int(data_extractor['id'])
                 creation_time = data_extractor['creation_time']
@@ -92,10 +90,99 @@ class DataImport(Resource):
                    "indicator_id": ind_id['indicator_id']
                }, 201
 
-    # def put(self, todo_id):
-    #     todos[todo_id] = request.form['data']
+    # def get(self, todo_id):
     #     return {todo_id: todos[todo_id]}
 
+
+@api.route('/collections/<string:id>')
+class DataManipulation(Resource):
+
+    # Task 4
+    def get(self, id):
+        connection = sqlite3.connect('z5222766.db')
+        cursor = connection.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+
+        if len(cursor.fetchall()) == 0:
+            return {"message": "Missing tables in the db"}, 400
+
+        cursor.execute('SELECT id FROM countries;')
+        if int(id) not in [item for ids in cursor.fetchall() for item in ids]:
+            return {"message": "Collection ID {} doesn't exist".format(id)}, 404
+
+        cursor.execute('SELECT * FROM countries WHERE id={};'.format(id))
+        data = cursor.fetchall()
+
+        entries = []
+        for i in data:
+            country_details = {'country': i[1], 'date': i[2], 'value': i[3]}
+            entries.append(country_details)
+
+        return {
+                   "id": data[0][5],
+                   "indicator": data[0][0],
+                   "indicator_value": data[0][4],
+                   "creation_time": data[0][6],
+                   "entries": entries
+               }, 200
+
+    # Task 2
+    def delete(self, id):
+        connection = sqlite3.connect('z5222766.db')
+        cursor = connection.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+
+        if len(cursor.fetchall()) == 0:
+            return {"message": "Missing tables in the db"}, 400
+
+        cursor.execute('SELECT * FROM countries;')
+        if len(cursor.fetchall()) == 0:
+            return {"message": "The table does not have any content, so deleting is not possible"}, 404
+
+        cursor.execute('SELECT id FROM countries;')
+        if int(id) not in [item for ids in cursor.fetchall() for item in ids]:
+            return {"message": "Collection ID {} doesn't exist".format(id)}, 404
+
+        cursor.execute('DELETE FROM countries WHERE id={};'.format(id))
+        connection.commit()
+        cursor.close()
+
+        return {
+                   "message": "The collection {} was removed from the database!".format(id),
+                   "id": str(id)
+               }, 200
+
+
+@api.route('/collections/<string:id>/<string:year>/<string:country>')
+class RetrieveEconomicIndicator(Resource):
+
+    # Task 5
+    def get(self, id, year, country):
+        connection = sqlite3.connect('z5222766.db')
+        cursor = connection.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+
+        if len(cursor.fetchall()) == 0:
+            return {"message": "Missing tables in the db"}, 400
+
+        cursor.execute('SELECT id FROM countries;')
+        if int(id) not in [item for ids in cursor.fetchall() for item in ids]:
+            return {"message": "Collection ID {} doesn't exist".format(id)}, 404
+
+        cursor.execute('SELECT * FROM countries WHERE id=? AND date=? AND country=?;', (id, year, country))
+        data = cursor.fetchall()
+        print(data)
+
+        if len(data) == 0:
+            return {"message": "No record available in the database, please check the inputs again!"}, 404
+
+        return {
+                   "id": data[0][5],
+                   "indicator": data[0][0],
+                   "country": data[0][1],
+                   "year": data[0][2],
+                   "value": data[0][3]
+               }, 200
 
 if __name__ == '__main__':
     app.run(debug=True)
