@@ -11,51 +11,6 @@ import sqlite3
 
 # with open('data.json') as f:
 #     r = json.load(f)
-#
-# ind_id = 'NY.GDP.MKTP.CD'
-# # response_data = requests.get(
-# #     'http://api.worldbank.org/v2/countries/all/indicators/{0}?date=2012:2017&format=json&per_page=1000'.format(
-# #         ind_id))
-# # json_data = response_data.json()
-#
-# dataset = pd.DataFrame(r[1])
-# dataset['country'] = dataset['country'].apply(lambda x: x['value'])
-# dataset['indicator_value'] = dataset['indicator'].apply(lambda x: x['value'])
-# dataset['indicator'] = dataset['indicator'].apply(lambda x: x['id'])
-# columns_to_drop = ['unit', 'obs_status', 'decimal', 'countryiso3code']
-# dataset.drop(columns_to_drop, axis=1, inplace=True)
-# dataset.dropna(inplace=True)
-# dataset.reset_index(drop=True, inplace=True)
-#
-# conn = sqlite3.connect('z5222766.db')
-# cursor = conn.cursor()
-# cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-#
-# id = 0
-# creation_time = str()
-# if len(cursor.fetchall()) == 0:
-#     id = 1
-#     dataset['id'] = dataset.apply(lambda x: id, axis=1)
-#     creation_time = datetime.now()
-#     dataset['creation_time'] = dataset.apply(lambda x: creation_time, axis=1)
-#     dataset.to_sql('countries', conn, if_exists='append', index=False)
-#     print(dataset.head())
-# else:
-#     sqlite_dataset = pd.read_sql('select * from countries', conn)
-#     indicator_list = list(sqlite_dataset['indicator'].unique())
-#     print(indicator_list)
-#     if ind_id not in indicator_list:
-#         max_id = max(list(sqlite_dataset['id'].unique()))
-#         id = max_id + 1
-#         dataset['id'] = dataset.apply(lambda x: id, axis=1)
-#         creation_time = datetime.now()
-#         dataset['creation_time'] = dataset.apply(lambda x: creation_time, axis=1)
-#         dataset.to_sql('countries', conn, if_exists='append', index=False)
-#     else:
-#         indicator_match_subset = sqlite_dataset.loc[sqlite_dataset['indicator'] == ind_id]
-#         data_extractor = indicator_match_subset.iloc[0]
-#         id = data_extractor['id']
-#         creation_time = data_extractor['creation_time']
 
 
 app = Flask(__name__)
