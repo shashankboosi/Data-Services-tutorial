@@ -7,7 +7,7 @@
 
 ## Tutorial 2 (API play - Flask Restplus)
     
-###Task 1
+### Task 1
 
 The service will download the JSON data for all countries respective to the year 2012 to 2017 and identified by the indicator id given by the user and process the content into an internal data format and store it in the database; use sqlite for storing the data
 
@@ -26,7 +26,7 @@ The service will download the JSON data for all countries respective to the year
 }
 ```
 
-###Task 2
+### Task 2
 
 This task deletes an existing collection from the database
 
@@ -43,7 +43,7 @@ This task deletes an existing collection from the database
 }
 ```
 
-###Task 3
+### Task 3
 
 This task retrieves all available collections. **order_by** is a comma separated string value to sort the collection based on the given criteria. Each segment of this value indicates how the collection should be sorted, and it consists of two parts (+ or -, and the name of column e.g., id). In each segment, + indicates ascending order, and - indicates descending order.
 
@@ -71,7 +71,7 @@ This task retrieves all available collections. **order_by** is a comma separated
 ```
 
 
-###Task 4
+### Task 4
 
 This operation retrieves a collection by its ID . The response of this operation will show the imported content from world bank API for all 6 years.
 
@@ -113,7 +113,7 @@ This operation retrieves a collection by its ID . The response of this operation
 }
 ```
 
-###Task 5
+### Task 5
 
 Retrieve economic indicator value for given country and a year
 
@@ -133,7 +133,7 @@ Retrieve economic indicator value for given country and a year
 }
 ```
 
-###Task 6
+### Task 6
 
 Retrieve top/bottom economic indicator values for a given year. The example below shows the top 10 indicator values for collection `id` 2
 
