@@ -1,36 +1,39 @@
+# The logic to the code is written by sboosi (z5222766)
+import sqlite3
 from datetime import datetime
 
-import flask
-from flask import Flask, request
-from flask_restplus import Api, Resource, fields, reqparse
+import pandas as pd
+import requests
+from flask import Flask
+from flask_restplus import Api, Resource, reqparse
 from ordered_set import OrderedSet
 
-import requests
-import pandas as pd
-import sqlite3
-
-# with open('data.json') as f:
-#   r = json.load(f)
-# order_by = "+id, +creation_time"
-
+'''
+If you want to use stub data instead of live calls
+Use
+with open('stub/data.json') as f:
+  r = json.load(f)
+Instead of
+response_data = requests.get(
+            'http://api.worldbank.org/v2/countries/all/indicators/{0}?date=2012:2017&format=json&per_page=1000'.format(
+                ind_id['indicator_id']))
+        json_data = response_data.json()
+'''
 
 app = Flask(__name__)
-api = Api(app)
-
-# user_indicator_id = api.model('Indicator', {
-#     'indicator_id': fields.String
-# })
+api = Api(app, default="Collections")
 
 parser_indicator = reqparse.RequestParser()
 parser_indicator.add_argument('indicator_id', type=str, help='Indicator')
 
 parser_order_by = reqparse.RequestParser()
-parser_order_by.add_argument('order_by', type=str, help='order_by={+id,+creation_time,+indicator,-id,-creation_time,-indicator}')
+parser_order_by.add_argument('order_by', type=str, help='{+id,+creation_time,+indicator,-id,-creation_time,-indicator}')
 
 
 @api.route('/collections/')
 class DataImport(Resource):
 
+    # Task 1
     @api.expect(parser_indicator, validate=True)
     def post(self):
         ind_id = parser_indicator.parse_args()
@@ -42,8 +45,6 @@ class DataImport(Resource):
             'http://api.worldbank.org/v2/countries/all/indicators/{0}?date=2012:2017&format=json&per_page=1000'.format(
                 ind_id['indicator_id']))
         json_data = response_data.json()
-        # with open('data.json') as f:
-        #     r = json.load(f)
 
         if response_data.status_code != 200:
             return {'message': 'indicator_id {} is not available in the existing list of all countries'.format(
@@ -69,7 +70,7 @@ class DataImport(Resource):
         if len(cursor.fetchall()) == 0:
             id = 1
             dataset['id'] = dataset.apply(lambda x: id, axis=1)
-            creation_time = datetime.now()
+            creation_time = datetime.now().isoformat()
             dataset['creation_time'] = dataset.apply(lambda x: creation_time, axis=1)
             dataset.to_sql('countries', conn, if_exists='append', index=False)
         else:
@@ -82,7 +83,7 @@ class DataImport(Resource):
                 else:
                     id = max(list_id) + 1
                 dataset['id'] = dataset.apply(lambda x: id, axis=1)
-                creation_time = datetime.now()
+                creation_time = datetime.now().isoformat()
                 dataset['creation_time'] = dataset.apply(lambda x: creation_time, axis=1)
                 dataset.to_sql('countries', conn, if_exists='append', index=False)
             else:
@@ -98,6 +99,56 @@ class DataImport(Resource):
                    "creation_time": str(creation_time),
                    "indicator_id": ind_id['indicator_id']
                }, 201
+
+    # Task 3
+    @api.expect(parser_order_by, validate=True)
+    def get(self):
+        connection = sqlite3.connect('z5222766.db')
+        cursor = connection.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+
+        if len(cursor.fetchall()) == 0:
+            return {"message": "Missing tables in the db"}, 400
+
+        cursor.execute('SELECT * FROM countries;')
+        if len(cursor.fetchall()) == 0:
+            return {"message": "The table does not have any content, so deleting is not possible"}, 404
+
+        ordering = parser_order_by.parse_args()
+        order_list = ordering['order_by'].replace(" ", "").split(",")
+
+        dataset = pd.read_sql('select * from countries', connection)
+        for i in order_list:
+            if i[1:] not in dataset.columns:
+                return {"message": "The given order_by query is invalid as there is no column with the given name"}, 400
+
+        query = "SELECT id, indicator, creation_time FROM countries ORDER BY"
+        for sort_query in order_list:
+            if sort_query[0] != '+' and sort_query[0] != '-':
+                return {"message": "Operation {} for query not available".format(sort_query[0])}, 400
+
+            N = sort_query[1:]
+            if sort_query.startswith('+'):
+                query = query + " " + N + " " + "ASC"
+            elif sort_query.startswith('-'):
+                query = query + " " + N + " " + "DESC"
+            query = query + ","
+
+        query = query.rstrip(",") + ";"
+
+        cursor.execute(query)
+        data = OrderedSet(cursor.fetchall())
+        if len(data) == 0:
+            return {"message": "The query {} cannot be searched because of insufficient data".format(
+                ordering['order_by'])}, 404
+
+        response_body = []
+        for row in data:
+            response_details = {"uri": "/collections/{}".format(row[0]), "id": row[0], "creation_time": row[1],
+                                "indicator": row[2]}
+            response_body.append(response_details)
+
+        return response_body, 200
 
 
 @api.route('/collections/<string:id>')
@@ -177,7 +228,6 @@ class RetrieveEconomicIndicator(Resource):
 
         cursor.execute('SELECT * FROM countries WHERE id=? AND date=? AND country=?;', (id, year, country))
         data = cursor.fetchall()
-        print(data)
 
         if len(data) == 0:
             return {"message": "No record available in the database, please check the inputs again!"}, 404
@@ -196,7 +246,7 @@ parser_q.add_argument('q', type=str, help='+N or -N')
 
 
 @api.route('/collections/<string:id>/<string:year>/')
-class RetrieveEconomicIndicator(Resource):
+class RetrieveNEconomicIndicator(Resource):
 
     # Task 6
     @api.expect(parser_q, validate=True)
