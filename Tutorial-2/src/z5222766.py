@@ -3,35 +3,44 @@ from datetime import datetime
 import flask
 from flask import Flask, request
 from flask_restplus import Api, Resource, fields, reqparse
+from ordered_set import OrderedSet
 
 import requests
 import pandas as pd
-import json
 import sqlite3
 
 # with open('data.json') as f:
 #   r = json.load(f)
+# order_by = "+id, +creation_time"
 
 
 app = Flask(__name__)
 api = Api(app)
 
-user_indicator_id = api.model('Indicator', {
-    'indicator_id': fields.String
-})
+# user_indicator_id = api.model('Indicator', {
+#     'indicator_id': fields.String
+# })
+
+parser_indicator = reqparse.RequestParser()
+parser_indicator.add_argument('indicator_id', type=str, help='Indicator')
+
+parser_order_by = reqparse.RequestParser()
+parser_order_by.add_argument('order_by', type=str, help='order_by={+id,+creation_time,+indicator,-id,-creation_time,-indicator}')
 
 
 @api.route('/collections/')
 class DataImport(Resource):
 
-    @api.expect(user_indicator_id, validate=True)
+    @api.expect(parser_indicator, validate=True)
     def post(self):
-        ind_id = flask.request.json
+        ind_id = parser_indicator.parse_args()
 
         if not ind_id['indicator_id']:
             return {'message': 'Missing indicator_id, Please enter the id'}, 400
 
-        response_data = requests.get('http://api.worldbank.org/v2/countries/all/indicators/{0}?date=2012:2017&format=json&per_page=1000'.format(ind_id['indicator_id']))
+        response_data = requests.get(
+            'http://api.worldbank.org/v2/countries/all/indicators/{0}?date=2012:2017&format=json&per_page=1000'.format(
+                ind_id['indicator_id']))
         json_data = response_data.json()
         # with open('data.json') as f:
         #     r = json.load(f)
@@ -89,9 +98,6 @@ class DataImport(Resource):
                    "creation_time": str(creation_time),
                    "indicator_id": ind_id['indicator_id']
                }, 201
-
-    # def get(self, todo_id):
-    #     return {todo_id: todos[todo_id]}
 
 
 @api.route('/collections/<string:id>')
@@ -183,6 +189,55 @@ class RetrieveEconomicIndicator(Resource):
                    "year": data[0][2],
                    "value": data[0][3]
                }, 200
+
+
+parser_q = reqparse.RequestParser()
+parser_q.add_argument('q', type=str, help='+N or -N')
+
+
+@api.route('/collections/<string:id>/<string:year>/')
+class RetrieveEconomicIndicator(Resource):
+
+    # Task 6
+    @api.expect(parser_q, validate=True)
+    def get(self, id, year):
+        connection = sqlite3.connect('z5222766.db')
+        cursor = connection.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+
+        if len(cursor.fetchall()) == 0:
+            return {"message": "Missing tables in the db"}, 400
+
+        cursor.execute('SELECT id FROM countries;')
+        if int(id) not in [item for ids in cursor.fetchall() for item in ids]:
+            return {"message": "Collection ID {} doesn't exist".format(id)}, 404
+
+        q = parser_q.parse_args()
+
+        if q['q'][0] != '+' and q['q'][0] != '-':
+            return {"message": "Query {} not available".format(q['q'])}, 400
+
+        N = int(q['q'][1:])
+        if q['q'].startswith('+'):
+            cursor.execute('SELECT * FROM countries WHERE id=? AND date=? ORDER BY value DESC;', (id, year))
+        elif q['q'].startswith('-'):
+            cursor.execute('SELECT * FROM countries WHERE id=? AND date=? ORDER BY value ASC;', (id, year))
+        data = cursor.fetchall()
+
+        if len(data) == 0:
+            return {"message": "The query {} cannot be searched because of insufficient data".format(q['q'])}, 404
+
+        entries = []
+        for i in range(0, N):
+            country_details = {'country': data[i][1], 'value': data[i][3]}
+            entries.append(country_details)
+
+        return {
+                   "indicator": data[0][0],
+                   "indicator_value": data[0][4],
+                   "entries": entries
+               }, 200
+
 
 if __name__ == '__main__':
     app.run(debug=True)
