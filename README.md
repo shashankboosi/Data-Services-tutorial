@@ -192,4 +192,4 @@ Retrieve top/bottom economic indicator values for a given year. The example belo
 }
 ```
 
-## Tutorial 3
+## Tutorial 3 (Machine Learning)
