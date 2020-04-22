@@ -2,6 +2,7 @@
 import sys
 
 import pandas as pd
+from ast import literal_eval
 from sklearn import linear_model
 
 # output = pd.DataFrame(data={"id": X_test["id"], "Prediction": y_pred})
@@ -14,8 +15,60 @@ def load_data(train_data, validation_data):
     return df_train, df_validation
 
 
-def data_refinement():
+def data_drop(data):
+    columns_to_drop = [
+        "movie_id",
+        "homepage",
+        "status",
+        "overview",
+        "tagline",
+        "spoken_languages",
+        "rating",
+    ]
+
+    return data.drop(columns_to_drop, axis=1)
+
+
+# Function to do the preliminary refinement of data
+def data_refine(data):
+    df_refine = data_drop(data)
+
+    # Convert  release date to date-time and also extract the year
+    df_refine["release_date"] = pd.to_datetime(
+        df_refine["release_date"], format="%Y-%m-%d"
+    )
+    df_refine["release_year"] = df_refine["release_date"].dt.year
+
+    return df_refine
+
+
+# This function extracts the name tag from the json feature objects and group them into a list of strings
+def extract_name_from_json():
     pass
+
+
+# Function to extract the data out of the json object
+def data_extraction(data):
+    df_clean = data_refine(data)
+
+    features = [
+        "cast",
+        "crew",
+        "keywords",
+        "genres",
+        "production_companies",
+        "production_countries",
+    ]
+    for feature in features:
+        df_clean[feature] = df_clean[feature].apply(literal_eval)
+
+    print(df_clean.iloc[1])
+    print(df_clean.columns)
+    print(len(df_clean))
+
+
+def data_clean(data):
+    data_extraction(data)
 
 
 if __name__ == "__main__":
@@ -26,6 +79,11 @@ if __name__ == "__main__":
         argument_list = full_cmd_arguments[1:]
         # Send the file names coming from command prompt
         train, validation = load_data(argument_list[0], argument_list[1])
+        data_clean(train)
+        print()
+        print("---------------Validation---------------")
+        print()
+        data_clean(validation)
 
     else:
         raise Exception(
