@@ -2,6 +2,7 @@
 import sys
 
 import pandas as pd
+import numpy as np
 from ast import literal_eval
 from sklearn import linear_model
 
@@ -42,28 +43,43 @@ def data_refine(data):
     return df_refine
 
 
-# This function extracts the name tag from the json feature objects and group them into a list of strings
-def extract_name_from_json():
-    pass
+# This function extracts the first 3 attributes tag from the json feature objects and group them into a list of strings
+def extract_attributes_from_json(json_data, attribute_name):
+    json_data = literal_eval(json_data)
+    if json_data == []:
+        return np.nan
+    result_list = []
+    count = 0
+    for row in json_data:
+        if count < 3:
+            result_list.append(row[attribute_name])
+            count += 1
+        else:
+            break
+    return result_list
 
 
 # Function to extract the data out of the json object
 def data_extraction(data):
     df_clean = data_refine(data)
 
-    features = [
-        "cast",
-        "crew",
-        "keywords",
-        "genres",
-        "production_companies",
-        "production_countries",
-    ]
-    for feature in features:
-        df_clean[feature] = df_clean[feature].apply(literal_eval)
+    # features = [
+    #     ["cast", "name"],
+    #     "keywords",
+    #     "genres",
+    #     "production_companies",
+    #     "production_countries",
+    # ]
+    # for feature in features:
+    #     df_clean[feature] = df_clean[feature].apply(literal_eval)
 
     print(df_clean.iloc[1])
-    print(df_clean.columns)
+    # Extract the name attribute from cast feature
+    df_clean["cast"] = df_clean["cast"].apply(
+        lambda row: extract_attributes_from_json(row, "name")
+    )
+    print(df_clean["cast"].iloc[1])
+    # print(df_clean.columns)
     print(len(df_clean))
 
 
