@@ -204,6 +204,6 @@ To run the code:
 
     1. Go to the directory of the python code ./Tutorial-3/src
     2. Run the command 
-          python imdb_movies_ml.py ../resources/training.csv ../resources/validation.csv
+          python imdb_movies_ml.py ../resources/training.csv ../resources/test.csv
 
 The output will be a bunch of CSV files which contains the output of the models and the summary of the metrics. The output is available at `./Tutorial-3/output`

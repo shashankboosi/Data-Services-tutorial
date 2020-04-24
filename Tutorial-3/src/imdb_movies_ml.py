@@ -20,10 +20,10 @@ from sklearn.svm import SVC
 # -------------------------- Loading data -------------------------------------------
 
 # Function to import the data from the csv files
-def load_data(train_data, validation_data):
+def load_data(train_data, test_data):
     df_train = pd.read_csv(train_data)
-    df_validation = pd.read_csv(validation_data)
-    return df_train, df_validation
+    df_test = pd.read_csv(test_data)
+    return df_train, df_test
 
 
 # -------------------------- Data Cleaning -------------------------------------------
@@ -202,12 +202,12 @@ def feature_extraction_and_transformation(clean_data, target, id_flag=False):
 
 
 # Function get the final data before modelling
-def pre_modeling(train, validation, problem_type, target):
+def pre_modeling(train, test, problem_type, target):
     df_train_clean = data_clean(train, problem_type)
     X_train, Y_train = feature_extraction_and_transformation(df_train_clean, target)
-    df_clean_val = data_clean(validation, problem_type)
+    df_clean_test = data_clean(test, problem_type)
     X_test, Y_test, id_target = feature_extraction_and_transformation(
-        df_clean_val, target, True
+        df_clean_test, target, True
     )
     return X_train, Y_train, X_test, Y_test, id_target
 
@@ -219,13 +219,13 @@ if __name__ == "__main__":
         full_cmd_arguments = sys.argv
         argument_list = full_cmd_arguments[1:]
         # Send the file names coming from command prompt
-        train, validation = load_data(argument_list[0], argument_list[1])
+        train, test = load_data(argument_list[0], argument_list[1])
 
         # ----------------------- Regression ------------------------
         problem_type = "regression"
         target = "revenue"
         X_train, Y_train, X_test, Y_test, id_target = pre_modeling(
-            train, validation, problem_type, target
+            train, test, problem_type, target
         )
 
         model = linear_model.Lasso()
@@ -254,19 +254,16 @@ if __name__ == "__main__":
         target = "rating"
         df_train_clean = data_clean(train, problem_type)
         X_train, Y_train, X_test, Y_test, id_target = pre_modeling(
-            train, validation, problem_type, target
+            train, test, problem_type, target
         )
         # Support Vector Machine
         svm = SVC(kernel="rbf")
         svm.fit(X_train, Y_train)
 
-        predictions_svm = svm.predict(X_test)
+        Y_svm = svm.predict(X_test)
 
         classification_output_df = pd.DataFrame(
-            {
-                "movie_id": id_target["movie_id"].values,
-                "predicted_rating": predictions_svm,
-            }
+            {"movie_id": id_target["movie_id"].values, "predicted_rating": Y_svm}
         )
         classification_output_df.to_csv(
             "../outputs/classification.output.csv", index=False
@@ -276,12 +273,12 @@ if __name__ == "__main__":
             {
                 "model": ["SVM"],
                 "average_precision": [
-                    round(precision_score(Y_test, predictions_svm, average="macro"), 2)
+                    round(precision_score(Y_test, Y_svm, average="macro"), 2)
                 ],
                 "average_recall": [
-                    round(recall_score(Y_test, predictions_svm, average="macro"), 2)
+                    round(recall_score(Y_test, Y_svm, average="macro"), 2)
                 ],
-                "accuracy": [round(accuracy_score(Y_test, predictions_svm), 2)],
+                "accuracy": [round(accuracy_score(Y_test, Y_svm), 2)],
             }
         )
         classification_pred_df.to_csv(
