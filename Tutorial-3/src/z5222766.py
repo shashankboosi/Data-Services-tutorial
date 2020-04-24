@@ -1,4 +1,7 @@
 # The logic to the code is written by sboosi(z5222766)
+
+# -------------------------- Import Libraries -------------------------------------------
+
 import sys
 from ast import literal_eval
 
@@ -7,13 +10,16 @@ import numpy as np
 import pandas as pd
 import scipy
 from sklearn import linear_model
-from sklearn.metrics import (accuracy_score, mean_squared_error,
-                             precision_score, recall_score)
+from sklearn.metrics import (
+    accuracy_score,
+    mean_squared_error,
+    precision_score,
+    recall_score,
+)
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.svm import SVC
 
-# output = pd.DataFrame(data={"id": X_test["id"], "Prediction": y_pred})
-# output.to_csv(path_or_buf="..\\output\\results.csv", index=False, quoting=3, sep=";")
+# -------------------------- Loading data -------------------------------------------
 
 # Function to import the data from the csv files
 def load_data(train_data, validation_data):
@@ -21,6 +27,8 @@ def load_data(train_data, validation_data):
     df_validation = pd.read_csv(validation_data)
     return df_train, df_validation
 
+
+# -------------------------- Data Cleaning -------------------------------------------
 
 # Function to drop the columns which are not needed
 def data_drop(data, type):
@@ -110,6 +118,9 @@ def data_clean(data, type):
     return df_clean.reset_index(drop=True)
 
 
+# --------------------------Feature Extraction -------------------------------------------
+
+
 def replace_attribute_with_target_mean_values(data, value_dict, target):
     raw_dict = value_dict[target]
     if isinstance(data, list):
@@ -121,6 +132,7 @@ def replace_attribute_with_target_mean_values(data, value_dict, target):
         return int(raw_dict[data])
 
 
+# Converts the attributes and gets the mean of the numeric version based off the target values
 def convert_the_attributes_based_on_target(data, feature, target):
     conversion_result = {}
     if isinstance(data[feature].iloc[0], list):
@@ -141,6 +153,7 @@ def convert_the_attributes_based_on_target(data, feature, target):
     )
 
 
+# Function which converts a string to lowercase and strips off spaces
 def string_transformation(string_data):
     if isinstance(string_data, list):
         return [str.lower(i.replace(" ", "")) for i in string_data]
@@ -148,6 +161,7 @@ def string_transformation(string_data):
         return str.lower(string_data.replace(" ", ""))
 
 
+# This function does all the oprations relating to features like Target encoding, Label Encoding and Standard Scalar
 def feature_extraction_and_transformation(clean_data, target, id_flag=False):
     features = [
         "cast",
@@ -189,6 +203,7 @@ def feature_extraction_and_transformation(clean_data, target, id_flag=False):
         return X, Y
 
 
+# Function get the final data before modelling
 def pre_modeling(train, validation, problem_type, target):
     df_train_clean = data_clean(train, problem_type)
     X_train, Y_train = feature_extraction_and_transformation(df_train_clean, target)
