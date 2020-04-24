@@ -1,5 +1,3 @@
-# The logic to the code is written by sboosi(z5222766)
-
 # -------------------------- Import Libraries -------------------------------------------
 
 import sys
