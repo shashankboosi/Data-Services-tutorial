@@ -223,7 +223,6 @@ if __name__ == "__main__":
         # Send the file names coming from command prompt
         train, validation = load_data(argument_list[0], argument_list[1])
 
-        zid = "z5222766"
         # ----------------------- Regression ------------------------
         problem_type = "regression"
         target = "revenue"
@@ -239,18 +238,18 @@ if __name__ == "__main__":
         regression_output_df = pd.DataFrame(
             {"movie_id": id_target["movie_id"].values, "predicted_revenue": Y_pred}
         )
-        regression_output_df.to_csv(zid + ".PART1.output.csv", index=False)
+        regression_output_df.to_csv("../output/regression.output.csv", index=False)
 
         # The mean squared error and pearson correlation
         corr, _ = scipy.stats.pearsonr(Y_test, Y_pred)
         regression_pred_df = pd.DataFrame(
             {
-                "zid": [zid],
+                "model": ["Lasso Reg"],
                 "MSR": [round(mean_squared_error(Y_test, Y_pred), 2)],
                 "correlation": [round(corr, 2)],
             }
         )
-        regression_pred_df.to_csv(zid + ".PART1.summary.csv", index=False)
+        regression_pred_df.to_csv("../output/regression.summary.csv", index=False)
 
         # ------------------------- Classification ---------------------
         problem_type = "classification"
@@ -271,11 +270,13 @@ if __name__ == "__main__":
                 "predicted_rating": predictions_svm,
             }
         )
-        classification_output_df.to_csv(zid + ".PART2.output.csv", index=False)
+        classification_output_df.to_csv(
+            "../output/classification.output.csv", index=False
+        )
 
         classification_pred_df = pd.DataFrame(
             {
-                "zid": [zid],
+                "model": ["SVM"],
                 "average_precision": [
                     round(precision_score(Y_test, predictions_svm, average="macro"), 2)
                 ],
@@ -285,7 +286,9 @@ if __name__ == "__main__":
                 "accuracy": [round(accuracy_score(Y_test, predictions_svm), 2)],
             }
         )
-        classification_pred_df.to_csv(zid + ".PART2.summary.csv", index=False)
+        classification_pred_df.to_csv(
+            "../output/classification.summary.csv", index=False
+        )
 
     else:
         raise Exception(
