@@ -5,9 +5,12 @@ from ast import literal_eval
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import scipy
 from sklearn import linear_model
-from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import (accuracy_score, mean_squared_error,
+                             precision_score, recall_score)
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.svm import SVC
 
 # output = pd.DataFrame(data={"id": X_test["id"], "Prediction": y_pred})
 # output.to_csv(path_or_buf="..\\output\\results.csv", index=False, quoting=3, sep=";")
@@ -22,7 +25,6 @@ def load_data(train_data, validation_data):
 # Function to drop the columns which are not needed
 def data_drop(data, type):
     columns_to_drop = [
-        "movie_id",
         "homepage",
         "status",
         "overview",
@@ -89,8 +91,8 @@ def data_clean(data, type):
     # Features and their attributes with no of elements
     features = [
         ["cast", "name", 3],
-        ["keywords", "name", 3],
-        ["genres", "name", 3],
+        ["keywords", "name", 5],
+        ["genres", "name", 5],
         ["production_companies", "name", 3],
         ["production_countries", "iso_3166_1", 3],
     ]
@@ -105,7 +107,7 @@ def data_clean(data, type):
     df_clean.drop("crew", axis=1, inplace=True)
     df_clean.dropna(inplace=True)
 
-    return df_clean
+    return df_clean.reset_index(drop=True)
 
 
 def replace_attribute_with_target_mean_values(data, value_dict, target):
@@ -146,7 +148,7 @@ def string_transformation(string_data):
         return str.lower(string_data.replace(" ", ""))
 
 
-def feature_extraction_and_transformation(clean_data, target):
+def feature_extraction_and_transformation(clean_data, target, id_flag=False):
     features = [
         "cast",
         "keywords",
@@ -164,16 +166,37 @@ def feature_extraction_and_transformation(clean_data, target):
         )
         clean_data.drop(feature, axis=1, inplace=True)
 
+    clean_data.dropna(inplace=True)
+
     le = LabelEncoder()
     clean_data["original_language"] = le.fit_transform(clean_data["original_language"])
 
-    print(clean_data.iloc[1])
+    id_target = []
+    if id_flag:
+        id_target = clean_data[["movie_id"]].copy()
+    clean_data.drop("movie_id", axis=1, inplace=True)
 
-    min_max = MinMaxScaler()
-    for i in clean_data.columns:
-        clean_data[i] = min_max.fit_transform(clean_data[i]).reshape(1, -1)
+    Y = clean_data[target]
+    X = clean_data.drop(target, axis=1)
 
-    print(clean_data.iloc[1])
+    # Min Max Scaler
+    standard = StandardScaler()
+    X = standard.fit_transform(X)
+
+    if id_flag:
+        return X, Y, id_target
+    else:
+        return X, Y
+
+
+def pre_modeling(train, validation, problem_type, target):
+    df_train_clean = data_clean(train, problem_type)
+    X_train, Y_train = feature_extraction_and_transformation(df_train_clean, target)
+    df_clean_val = data_clean(validation, problem_type)
+    X_test, Y_test, id_target = feature_extraction_and_transformation(
+        df_clean_val, target, True
+    )
+    return X_train, Y_train, X_test, Y_test, id_target
 
 
 if __name__ == "__main__":
@@ -184,29 +207,72 @@ if __name__ == "__main__":
         argument_list = full_cmd_arguments[1:]
         # Send the file names coming from command prompt
         train, validation = load_data(argument_list[0], argument_list[1])
-        df_train_clean = data_clean(train, "regression")
-        feature_extraction_and_transformation(df_train_clean, "revenue")
-        print()
-        print("---------------Validation---------------")
-        print()
-        df_clean_val = data_clean(validation, "regression")
-        feature_extraction_and_transformation(df_clean_val, "revenue")
+
+        zid = "z5222766"
+        # ----------------------- Regression ------------------------
+        problem_type = "regression"
+        target = "revenue"
+        X_train, Y_train, X_test, Y_test, id_target = pre_modeling(
+            train, validation, problem_type, target
+        )
+
+        model = linear_model.Lasso()
+        model.fit(X_train, Y_train)
+
+        Y_pred = model.predict(X_test)
+
+        regression_output_df = pd.DataFrame(
+            {"movie_id": id_target["movie_id"].values, "predicted_revenue": Y_pred}
+        )
+        regression_output_df.to_csv(zid + ".PART1.output.csv", index=False)
+
+        # The mean squared error and pearson correlation
+        corr, _ = scipy.stats.pearsonr(Y_test, Y_pred)
+        regression_pred_df = pd.DataFrame(
+            {
+                "zid": [zid],
+                "MSR": [round(mean_squared_error(Y_test, Y_pred), 2)],
+                "correlation": [round(corr, 2)],
+            }
+        )
+        regression_pred_df.to_csv(zid + ".PART1.summary.csv", index=False)
+
+        # ------------------------- Classification ---------------------
+        problem_type = "classification"
+        target = "rating"
+        df_train_clean = data_clean(train, problem_type)
+        X_train, Y_train, X_test, Y_test, id_target = pre_modeling(
+            train, validation, problem_type, target
+        )
+        # Support Vector Machine
+        svm = SVC(kernel="rbf")
+        svm.fit(X_train, Y_train)
+
+        predictions_svm = svm.predict(X_test)
+
+        classification_output_df = pd.DataFrame(
+            {
+                "movie_id": id_target["movie_id"].values,
+                "predicted_rating": predictions_svm,
+            }
+        )
+        classification_output_df.to_csv(zid + ".PART2.output.csv", index=False)
+
+        classification_pred_df = pd.DataFrame(
+            {
+                "zid": [zid],
+                "average_precision": [
+                    round(precision_score(Y_test, predictions_svm, average="macro"), 2)
+                ],
+                "average_recall": [
+                    round(recall_score(Y_test, predictions_svm, average="macro"), 2)
+                ],
+                "accuracy": [round(accuracy_score(Y_test, predictions_svm), 2)],
+            }
+        )
+        classification_pred_df.to_csv(zid + ".PART2.summary.csv", index=False)
 
     else:
         raise Exception(
             "Please make sure to give arguments according to the structure /python3 zid.py path1 path2/"
         )
-
-    # model = linear_model.LinearRegression()
-    # # model = linear_model.BayesianRidge(alpha_1=1e-06, alpha_2=1e-06, compute_score=False, copy_X=True,
-    # #                                    fit_intercept=True, lambda_1=1e-06, lambda_2=1e-06, n_iter=300,
-    # #                                    normalize=False, tol=0.001, verbose=False)
-    # model.fit(diet_X_train, diet_y_train)
-
-    # y_pred = model.predict(diet_X_test)
-
-    # for i in range(len(diet_y_test)):
-    #     print ("Expected:", diet_y_test[i], "Predicted:", y_pred[i])
-
-    # # The mean squared error
-    # print ("Mean squared error: %.2f" % mean_squared_error(diet_y_test, y_pred))
