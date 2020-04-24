@@ -238,7 +238,7 @@ if __name__ == "__main__":
         regression_output_df = pd.DataFrame(
             {"movie_id": id_target["movie_id"].values, "predicted_revenue": Y_pred}
         )
-        regression_output_df.to_csv("../output/regression.output.csv", index=False)
+        regression_output_df.to_csv("../outputs/regression.output.csv", index=False)
 
         # The mean squared error and pearson correlation
         corr, _ = scipy.stats.pearsonr(Y_test, Y_pred)
@@ -249,7 +249,7 @@ if __name__ == "__main__":
                 "correlation": [round(corr, 2)],
             }
         )
-        regression_pred_df.to_csv("../output/regression.summary.csv", index=False)
+        regression_pred_df.to_csv("../outputs/regression.summary.csv", index=False)
 
         # ------------------------- Classification ---------------------
         problem_type = "classification"
@@ -271,7 +271,7 @@ if __name__ == "__main__":
             }
         )
         classification_output_df.to_csv(
-            "../output/classification.output.csv", index=False
+            "../outputs/classification.output.csv", index=False
         )
 
         classification_pred_df = pd.DataFrame(
@@ -287,7 +287,7 @@ if __name__ == "__main__":
             }
         )
         classification_pred_df.to_csv(
-            "../output/classification.summary.csv", index=False
+            "../outputs/classification.summary.csv", index=False
         )
 
     else:
