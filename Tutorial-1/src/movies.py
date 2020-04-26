@@ -23,7 +23,7 @@ def print_dataframe(dataframe, print_column=True, print_rows=True):
 
     # print rows one by one
     if print_rows:
-        for index, row in dataframe.iterrows():
+        for _, row in dataframe.iterrows():
             print(",".join([str(row[column]) for column in dataframe]))
 
 

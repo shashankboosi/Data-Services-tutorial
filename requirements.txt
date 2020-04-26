@@ -4,3 +4,6 @@ werkzeug==0.16.1
 flask==1.1.1
 flask-restplus==0.13.0
 sqlite==3.31.1
+scikit-learn==0.22.1
+numpy==1.18.1
+scipy==1.4.1

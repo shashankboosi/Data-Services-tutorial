@@ -1,0 +1,2 @@
+model,average_precision,average_recall,accuracy
+SVM,0.96,0.96,0.97

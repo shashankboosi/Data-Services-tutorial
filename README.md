@@ -192,4 +192,18 @@ Retrieve top/bottom economic indicator values for a given year. The example belo
 }
 ```
 
-## Tutorial 3
+## Tutorial 3 (Machine Learning - Regression and Classification)
+
+The dataset used for this tutorial is the IMDB Kaggle sample dataset with the number of training set to be `2100` and the number of test set to be `400`.
+
+The code is available at `./Tutorial-3/src/imdb_movies_ml.py`
+
+The report for the Tutorial is available at `./Tutorial-3/output/imdb_ml.pdf` where a brief explanation of the pipeline is explained.
+
+To run the code:
+
+    1. Go to the directory of the python code ./Tutorial-3/src
+    2. Run the command 
+          python imdb_movies_ml.py ../resources/training.csv ../resources/test.csv
+
+The output will be a bunch of CSV files which contains the output of the models and the summary of the metrics. The output is available at `./Tutorial-3/output`
