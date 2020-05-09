@@ -1,4 +1,4 @@
-# The logic to the code is written by sboosi (z5222766)
+# The logic to the code is written by sboosi
 import sqlite3
 from datetime import datetime
 
@@ -44,6 +44,7 @@ class DataImport(Resource):
         response_data = requests.get(
             'http://api.worldbank.org/v2/countries/all/indicators/{0}?date=2012:2017&format=json&per_page=1000'.format(
                 ind_id['indicator_id']))
+        print(response_data)
         json_data = response_data.json()
 
         if response_data.status_code != 200:
@@ -59,7 +60,7 @@ class DataImport(Resource):
         dataset.dropna(inplace=True)
         dataset.reset_index(drop=True, inplace=True)
 
-        conn = sqlite3.connect('z5222766.db')
+        conn = sqlite3.connect('sqlite_api.db')
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
 
@@ -103,7 +104,7 @@ class DataImport(Resource):
     # Task 3
     @api.expect(parser_order_by, validate=True)
     def get(self):
-        connection = sqlite3.connect('z5222766.db')
+        connection = sqlite3.connect('sqlite_api.db')
         cursor = connection.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
 
@@ -156,7 +157,7 @@ class DataManipulation(Resource):
 
     # Task 4
     def get(self, id):
-        connection = sqlite3.connect('z5222766.db')
+        connection = sqlite3.connect('sqlite_api.db')
         cursor = connection.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
 
@@ -185,7 +186,7 @@ class DataManipulation(Resource):
 
     # Task 2
     def delete(self, id):
-        connection = sqlite3.connect('z5222766.db')
+        connection = sqlite3.connect('sqlite_api.db')
         cursor = connection.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
 
@@ -215,7 +216,7 @@ class RetrieveEconomicIndicator(Resource):
 
     # Task 5
     def get(self, id, year, country):
-        connection = sqlite3.connect('z5222766.db')
+        connection = sqlite3.connect('sqlite_api.db')
         cursor = connection.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
 
@@ -251,7 +252,7 @@ class RetrieveNEconomicIndicator(Resource):
     # Task 6
     @api.expect(parser_q, validate=True)
     def get(self, id, year):
-        connection = sqlite3.connect('z5222766.db')
+        connection = sqlite3.connect('sqlite_api.db')
         cursor = connection.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
 
